@@ -26,11 +26,11 @@ IMG_PATH_TITLE = "./img/title.png"
 IMG_PATH_RESULT = "./img/result.png"
 
 # 音
-HIT_SOUND_PATH = "./sound/hit.ogg"#wav"
-BEEP_SOUND_PATH = "./sound/beep4.ogg"#mp3"
-FLIP_SOUND_PATH = "./sound/flipcard.ogg"#mp3"
-CHAIME_SOUND_PATH = "./sound/chaime.ogg"#mp3"
-DECISION_SOUND_PATH = "./sound/decision44.ogg"#mp3"
+HIT_SOUND_PATH = "./sound/hit.ogg"
+BEEP_SOUND_PATH = "./sound/beep4.ogg"
+FLIP_SOUND_PATH = "./sound/flipcard.ogg"
+CHAIME_SOUND_PATH = "./sound/chaime.ogg"
+DECISION_SOUND_PATH = "./sound/decision44.ogg"
 
 TYPE_JOKER = 0
 TYPE_FOODWASTE = 1
@@ -51,9 +51,9 @@ if pygame.joystick.get_count() > 0:
     print('ボタン数 :', joystick.get_numbuttons())
         
 screen = pygame.display.set_mode(SCREEN_RECT.size)
-font_lg = pygame.font.Font("KosugiMaru-Regular.ttf", 50)#pygame.font.SysFont(None, 50)
-font_md = pygame.font.Font("KosugiMaru-Regular.ttf", 30)#pygame.font.SysFont(None, 30)
-font_sm = pygame.font.Font("KosugiMaru-Regular.ttf", 24)#pygame.font.SysFont(None, 24)
+font_lg = pygame.font.Font("KosugiMaru-Regular.ttf", 50)
+font_md = pygame.font.Font("KosugiMaru-Regular.ttf", 30)
+font_sm = pygame.font.Font("KosugiMaru-Regular.ttf", 24)
 clock = pygame.time.Clock()
 
 class Trush(pygame.sprite.Sprite):
@@ -75,6 +75,9 @@ class Trush(pygame.sprite.Sprite):
     def draw_pointing(self, screen):
         rect = self.image.get_rect(topleft= self.pos)
         pygame.draw.circle(screen, (200, 100, 100), rect.center,100, 5)
+    def is_inside(self, point):
+        rect = self.image.get_rect(topleft= self.pos)
+        return rect.collidepoint(point)
 
 #
 # ゲームメイン画面
@@ -145,6 +148,14 @@ async def gamemain():
                         flip_sound.play()
                         trush_list[pointing_idx].is_open = True
                         checking_list.append(trush_list[pointing_idx])
+            elif event.type == MOUSEBUTTONDOWN: # タッチに対応
+                for i, trush in enumerate(trush_list):
+                    if not trush_list[i].is_open and trush.is_inside(event.pos):
+                        pointing_idx = i
+                        flip_sound.play()
+                        trush_list[pointing_idx].is_open = True
+                        checking_list.append(trush_list[pointing_idx])
+                        break
             elif event.type == JOYBUTTONDOWN and joystick.get_button(0) and len(checking_list) < 2 :
                 if not trush_list[pointing_idx].is_open:
                     flip_sound.play()
@@ -281,6 +292,9 @@ def complete(trush_list):
 # スタート画面
 #
 async def start_page():
+    # タッチスタートの場合、この画面がSKIPされてしまうため
+    countup = 0
+    
     title_img = pygame.transform.scale_by(pygame.image.load(IMG_PATH_TITLE).convert_alpha(), 0.6)
     # 説明文
     msg = []
@@ -300,6 +314,8 @@ async def start_page():
         trush_list[i].is_open = True
 
     while True:
+        countup += 1
+        
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
@@ -307,6 +323,8 @@ async def start_page():
             if event.type == KEYDOWN and event.key in [K_a,K_RETURN]:
                 return
             elif event.type == JOYBUTTONDOWN and joystick.get_button(0):
+                return
+            elif event.type == MOUSEBUTTONDOWN and countup > TICK:
                 return
                 
         screen.fill(BG_COLOR)
@@ -366,6 +384,8 @@ async def end_page(result_list):
             if event.type == KEYDOWN and event.key in [K_a,K_RETURN]:
                 return
             elif event.type == JOYBUTTONDOWN and joystick.get_button(0):
+                return
+            elif event.type == MOUSEBUTTONDOWN:
                 return
 
         screen.fill(BG_COLOR)
